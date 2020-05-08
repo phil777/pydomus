@@ -40,14 +40,18 @@ class LifeDomus(object):
             raise NotImplementedError
 
     @logged
-    def show_categories(self):
+    def get_domains(self):
+        domains = {}
         for domain in self.device.service.GetDomainsObjectList():
-            print("{0[domn_clsid]}: {0[label]}".format(domain))
+            catd = {}
             for cat in self.device.service.GetCategoriesList(domain["domn_clsid"]):
                 catdesc = self.device.service.GetCategoryDescriptor(catg_clsid=cat, **self.skey)
-                print("    {0[catg_clsid]}: {0[label]}".format(catdesc))
+                devd = {}
                 for dev in self.device.service.GetTypesObjectList(catdesc["catg_clsid"]):
-                    print("        {0[devc_clsid]}: {0[label]}".format(dev))
+                    devd[dev["devc_clsid"]] = dev
+                catd[catdesc["catg_clsid"]] = (catdesc, devd)
+            domains[domain["domn_clsid"]] = (domain, catd)
+        return domains
 
     @logged
     def show_connectors(self):
@@ -91,7 +95,7 @@ class LifeDomus(object):
             raise Exception
         return dev
     @logged
-    def add_knx_lamp(self, label, room, knx_grp_write, knx_grp_read):
+    def add_knx_light(self, label, room, knx_grp_write, knx_grp_read):
         dev = self.add_device("CLSID-DEVC-A-EC01", label, room, "KNX IP")
         self.device.service.SetPropertyRefCtrl(device_key=dev, prop_clsid="CLSID-DEVC-PROP-TOR-SW",
                                                prop_numr=0, refr_ctrl=knx_grp_write, **self.sskey)
