@@ -59,7 +59,10 @@ app.add_typer(show, name="show")
 app.add_typer(add, name="add")
 
 @app.callback()
-def main_options(base_url=None, password=None):
+def main_options(base_url=None,
+                 password=None,
+                 no_verify:bool=typer.Option(False, "--insecure", "-k",
+                                             help="Do not verify certificate")):
     if base_url is None:
         base_url = os.environ.get("PYDOMUS_BASE_URL")
     if password is None:
@@ -70,7 +73,10 @@ def main_options(base_url=None, password=None):
 
     state.base_url = base_url
     state.password = password
-    state.ld = pydomus.api.LifeDomus(base_url, password)
+    if no_verify:
+        import warnings
+        warnings.filterwarnings("ignore")
+    state.ld = pydomus.api.LifeDomus(base_url, password, not no_verify)
 
 def main():
     app()

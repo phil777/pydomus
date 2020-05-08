@@ -1,14 +1,20 @@
 import zeep
+import zeep.transports
+import requests
 import functools
 import urllib.parse
 
 class LifeDomus(object):
-    def __init__(self, baseurl, pwd):
+    def __init__(self, baseurl, pwd, verify=True):
         self.password = pwd
+        sess = requests.Session()
+        if not verify:
+            sess.verify = False
+        t = zeep.transports.Transport(session=sess)
         for svc in ["CoreServices", "State", "Account", "User", "Modularization",
                    "Connector", "Site", "Theme", "Device", "Tydom", "Alert", "Room"]:
             n = svc.lower()
-            s = zeep.Client(urllib.parse.urljoin(baseurl,"/DomoBox/"+svc+"?wsdl"))
+            s = zeep.Client(urllib.parse.urljoin(baseurl,"/DomoBox/"+svc+"?wsdl"), transport=t)
             setattr(self, n, s)
         self.login()
         self.set_site()
