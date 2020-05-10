@@ -35,6 +35,11 @@ def domains():
             for dev in devlist.values():
                 typer.echo( "        {0[devc_clsid]}: {0[label]}".format(dev) )
 
+@show.command()
+def devices():
+    devlist = state.ld.get_devices()
+    for d in sorted(devlist, key=lambda x:x["devc_clsid"]):
+        typer.echo( "{0[device_key]} {0[devc_clsid]} {0[label]:<40} {0[room_label]}" .format(d) )
 
 ### ADD ###
 

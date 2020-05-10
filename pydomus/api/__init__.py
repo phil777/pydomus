@@ -88,6 +88,9 @@ class LifeDomus(object):
             raise KeyError(label)
 
     @logged
+    def get_devices(self):
+        return self.device.service.GetObjectList(**self.sskey)
+    @logged
     def get_device(self, key):
         return self.device.service.GetDeviceDescriptor(device_key=key, **self.sskey)
     @logged
