@@ -41,6 +41,14 @@ def devices():
     for d in sorted(devlist, key=lambda x:x["devc_clsid"]):
         typer.echo( "{0[device_key]} {0[devc_clsid]} {0[label]:<40} {0[room_label]}" .format(d) )
 
+@show.command()
+def properties(dev):
+    if not dev.startswith("DEVC_00") and len(dev) != 40:
+        dev = state.ld.get_device_key(dev)
+    proplist = state.ld.get_device_properties(dev)
+    for p in proplist:
+        typer.echo( "{0[prop_clsid]:<40} {0[refr_ctrl]!s:<8} {0[refr_indc]!s:<8} {0[label]}" .format(p) )
+
 ### ADD ###
 
 add = typer.Typer()

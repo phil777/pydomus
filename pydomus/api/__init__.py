@@ -87,12 +87,25 @@ class LifeDomus(object):
         else:
             raise KeyError(label)
 
+
     @logged
     def get_devices(self):
         return self.device.service.GetObjectList(**self.sskey)
     @logged
+    def get_device_key(self, label):
+        dl = self.get_devices()
+        for d in dl:
+            if d["label"] == label:
+                return d["device_key"]
+        else:
+            raise KeyError(label)
+
+    @logged
     def get_device(self, key):
         return self.device.service.GetDeviceDescriptor(device_key=key, **self.sskey)
+    @logged
+    def get_device_properties(self, key):
+        return self.device.service.GetPropertiesObjectList(device_key=key, **self.sskey)
     @logged
     def add_device(self, clsid, label, room, connector):
         room_key = self.get_room_key(room)
