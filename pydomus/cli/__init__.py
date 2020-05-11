@@ -2,6 +2,7 @@ import os
 import typer
 import pydomus.api
 import argparse
+import xlrd
 
 state = argparse.Namespace()
 

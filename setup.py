@@ -15,7 +15,8 @@ setup(
     ],
     scripts = [ 'bin/pydomus' ],
     install_requires=[
-          "zeep",
-          "typer[all]",
+        "zeep",
+        "typer[all]",
+        "xlrd",
       ],
 )
