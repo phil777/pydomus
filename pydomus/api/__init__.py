@@ -86,7 +86,29 @@ class LifeDomus(object):
                 return r["room_key"]
         else:
             raise KeyError(label)
-
+    @logged
+    def get_room(self, room):
+        if not room.startswith("ROOM_"):
+            room = self.get_room_key(room)
+        return self.room.service.GetRoomDescriptor(room_key=room, **self.sskey)
+    @logged
+    def get_area(self, room):
+        if not room.startswith("ROOM_"):
+            room = self.get_room_key(room)
+        return self.room.service.GetAreaDescription(room_key=room, **self.sskey)
+    @logged
+    def set_room_picture(self, room, picture_key):
+        if not room.startswith("ROOM_"):
+            room = self.get_room_key(room)
+        self.room.service.SetPictureKey(room_key=room, picture_key=picture_key, **self.sskey)
+    @logged
+    def add_room(self, clsid, label):
+        return self.room.service.AddRoom(room_item_clsid=clsid, label=label, **self.sskey)
+    @logged
+    def delete_room(self, room):
+        if not room.startswith("ROOM_"):
+            room = self.get_room_key(room)
+        return self.room.service.DeleteRoom(room_key=room, **self.sskey)
 
     @logged
     def get_devices(self):

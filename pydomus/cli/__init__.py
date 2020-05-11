@@ -25,6 +25,10 @@ def rooms():
         l = "{0[room_key]} {0[label]}".format(r)
         typer.echo(l)
 
+@show.command("room")
+def show_room(room:str):
+    typer.echo(state.ld.get_room(room))
+
 
 @show.command()
 def domains():
@@ -59,6 +63,10 @@ def properties(dev):
 
 add = typer.Typer()
 
+@add.command("room")
+def add_room(clsid, label):
+    typer.echo(state.ld.add_room(clsid, label))
+
 @add.command()
 def knx_light(label, room, write_cmd, read_cmd):
     state.ld.add_knx_light(label, room, write_cmd, read_cmd)
@@ -69,15 +77,36 @@ def knx_dimmer(label, room, write_cmd, read_cmd, write_val, read_val):
     state.ld.add_knx_dimmer(label, room, write_cmd, read_cmd, write_val, read_val)
 
 
-### BATCH ###
+### DELETE ###
+
+delete = typer.Typer()
+
+@delete.command("device")
+def del_device(device:str):
+    if not state.ld.delete_device(device):
+        typer.echo("failed", err=True)
+
+@delete.command("room")
+def del_room(room:str):
+    if not state.ld.delete_room(room):
+        typer.echo("failed", err=True)
+
+### PROVISION ###
+
 provision = typer.Typer()
 
-@provision.command()
-def rooms(excel_file, sheet="LD Rooms"):
+@provision.command("rooms")
+def prov_rooms(excel_file, sheet="LD Rooms"):
     wb = xlrd.open_workbook(excel_file)
     sh = wb.sheet_by_name(sheet)
     for rowx in range(1, sh.nrows):
-        print(sh.row_values(rowx))
+        label = sh.cell_value(rowx, 0)
+        rtype = sh.cell_value(rowx, 1)
+        pic = sh.cell_value(rowx, 2)
+        typer.echo("Creating [%s] as type [%s]" % (label,rtype))
+        room = state.ld.add_room(rtype, label)
+        if pic:
+            state.ld.set_room_picture(room, pic)
 
 @provision.command("devices")
 def prov_devices(connector:str, excel_file:str, sheets:str=""):
@@ -125,14 +154,7 @@ def prov_devices(connector:str, excel_file:str, sheets:str=""):
                     print("        {0:<40} = {1}".format(propname[colx-3],ref))
                     setprop[colx-3](dev, ref)
 
-### DELETE ###
 
-delete = typer.Typer()
-
-@delete.command("device")
-def del_device(device:str):
-    if not state.ld.delete_device(device):
-        typer.echo("failed", err=True)
 
 ### UNPROVISION ###
 
@@ -171,6 +193,26 @@ def unprov_devices(excel_file:str, sheets:str="", interactive:bool=False):
                     typer.echo("deleting.")
                 r = state.ld.delete_device(idev[k])
                 print("====>",r)
+
+
+@unprovision.command("rooms")
+def unprov_rooms(excel_file, sheet="LD Rooms", interactive:bool=False):
+    wb = xlrd.open_workbook(excel_file)
+    sh = wb.sheet_by_name(sheet)
+
+    rlist = state.ld.get_rooms()
+    rkeys = { r["label"]: r["room_key"] for r in rlist }
+    for rowx in range(1, sh.nrows):
+        label = sh.cell_value(rowx, 0)
+        if label in rkeys:
+            typer.echo("Deleting %s" % (label))
+            if interactive:
+                r = input("ok?")
+                if r.lower() not in ["y","yes"]:
+                    continue
+                typer.echo("deleting.")
+            r = state.ld.delete_room(rkeys[label])
+            print("====>",r)
 
 
 ### MAIN ###
