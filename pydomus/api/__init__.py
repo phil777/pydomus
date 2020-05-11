@@ -101,11 +101,28 @@ class LifeDomus(object):
             raise KeyError(label)
 
     @logged
+    def delete_device(self, key):
+        return self.device.service.DeleteDevice(device_key=key, **self.sskey)
+    @logged
     def get_device(self, key):
         return self.device.service.GetDeviceDescriptor(device_key=key, **self.sskey)
     @logged
+    def get_device_class_from_label(self, lbl):
+        for domain in self.device.service.GetDomainsObjectList():
+            for cat in self.device.service.GetCategoriesList(domain["domn_clsid"]):
+                catdesc = self.device.service.GetCategoryDescriptor(catg_clsid=cat, **self.skey)
+                for dev in self.device.service.GetTypesObjectList(catdesc["catg_clsid"]):
+                    if ("{%s}" % lbl) == dev["label"]:
+                        return dev["devc_clsid"]
+        raise KeyError(lbl)
+
+    @logged
     def get_device_properties(self, key):
         return self.device.service.GetPropertiesObjectList(device_key=key, **self.sskey)
+    @logged
+    def set_device_picture(self, dev, picture_key):
+        self.device.service.SetPictureKey(device_key=dev, picture_key=picture_key,
+                                             **self.sskey)
     @logged
     def add_device(self, clsid, label, room, connector):
         room_key = self.get_room_key(room)
@@ -116,6 +133,14 @@ class LifeDomus(object):
         if not self.device.service.SetRoom(device_key=dev, room_key=room_key, **self.sskey):
             raise Exception
         return dev
+    @logged
+    def set_device_property_ctrl(self, dev, prop, ref):
+        self.device.service.SetPropertyRefCtrl(device_key=dev, prop_clsid=prop,
+                                               prop_numr=0, refr_ctrl=ref, **self.sskey)
+    @logged
+    def set_device_property_indc(self, dev, prop, ref):
+        self.device.service.SetPropertyRefIndc(device_key=dev, prop_clsid=prop,
+                                               prop_numr=0, refr_indc=ref, **self.sskey)
     @logged
     def add_knx_light(self, label, room, knx_grp_write, knx_grp_read):
         dev = self.add_device("CLSID-DEVC-A-EC01", label, room, "KNX IP")
