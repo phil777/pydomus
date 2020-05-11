@@ -20,11 +20,29 @@ Example of commands
 pydomus  show connectors
 pydomus  show rooms
 pydomus  show domains
+pydomus  show devices
 pydomus  add knx-light "My kitchen lamp" Kitchen 6/0/4 6/1/4
 pydomus  add knx-dimmer "My basement dimmer" Basement 6/0/7 6/1/7 6/3/7 6/4/7
 ```
 
 
+### Install in virtual env
+
+#### Linux
+
+```
+python -m venv /path/to/venv
+. /path/to/venv/bin/activate
+pip install .
+```
+
+#### Windows
+
+```
+python -m venv \path\to\venv
+\path\do\venv\Scripts\Activate.bat
+pip install .
+```
 
 ## How LifeDomus CS works
 
