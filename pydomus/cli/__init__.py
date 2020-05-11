@@ -69,6 +69,108 @@ def knx_dimmer(label, room, write_cmd, read_cmd, write_val, read_val):
     state.ld.add_knx_dimmer(label, room, write_cmd, read_cmd, write_val, read_val)
 
 
+### BATCH ###
+provision = typer.Typer()
+
+@provision.command()
+def rooms(excel_file, sheet="LD Rooms"):
+    wb = xlrd.open_workbook(excel_file)
+    sh = wb.sheet_by_name(sheet)
+    for rowx in range(1, sh.nrows):
+        print(sh.row_values(rowx))
+
+@provision.command("devices")
+def prov_devices(connector:str, excel_file:str, sheets:str=""):
+    wb = xlrd.open_workbook(excel_file)
+    if sheets:
+        sheets = sheets.split(",")
+    else:
+        sheets = [ sn for sn in wb.sheet_names() if sn.startswith("LD CLSID")]
+
+    for sheet_name in sheets:
+        sh = wb.sheet_by_name(sheet_name)
+        _,clsid_lbl = sheet_name.split()
+        clsid = state.ld.get_device_class_from_label(clsid_lbl)
+        typer.echo(clsid)
+        setprop = []
+        propname = []
+        for colx in range(3,sh.ncols):
+            try:
+                v = sh.cell_value(0, colx)
+                prop,rw = v.split()
+                prop = "CLSID-DEVC-PROP-"+prop
+                if rw == "write":
+                    f = lambda dev, ref, prop=prop: state.ld.set_device_property_ctrl(dev, prop, ref)
+                    pn = "%s ctrl" % prop
+                else:
+                    f = lambda dev, ref, prop=prop: state.ld.set_device_property_indc(dev, prop, ref)
+                    pn = "%s indc" % prop
+                setprop.append(f)
+                propname.append(pn)
+            except Exception as e:
+                raise Exception("Reading cell row=%i col=%i: %s" % (0,colx,e))
+        for rowx in range(1, sh.nrows):
+            devlabel = sh.cell_value(rowx,0)
+            room = sh.cell_value(rowx,1)
+            pic =  sh.cell_value(rowx,2)
+            typer.echo("    Creating %s in %s" % (devlabel, room))
+            dev=state.ld.add_device(clsid, sh.cell_value(rowx,0), sh.cell_value(rowx,1), connector)
+            if pic:
+                typer.echo("        setting pic %s" % pic)
+                state.ld.set_device_picture(dev, pic)
+            for colx in range(3, sh.ncols):
+                ref = sh.cell_value(rowx, colx)
+                ref_label = sh.cell_value(1, colx)
+                if ref:
+                    print("        {0:<40} = {1}".format(propname[colx-3],ref))
+                    setprop[colx-3](dev, ref)
+
+### DELETE ###
+
+delete = typer.Typer()
+
+@delete.command("device")
+def del_device(device:str):
+    if not state.ld.delete_device(device):
+        typer.echo("failed", err=True)
+
+### UNPROVISION ###
+
+unprovision = typer.Typer()
+
+@unprovision.command("devices")
+def unprov_devices(excel_file:str, sheets:str="", interactive:bool=False):
+    wb = xlrd.open_workbook(excel_file)
+    if sheets:
+        sheets = sheets.split(",")
+    else:
+        sheets = [ sn for sn in wb.sheet_names() if sn.startswith("LD CLSID")]
+
+    idev = {}
+    devlist = state.ld.get_devices()
+    for d in state.ld.get_devices():
+        idev[d["label"], d["room_label"]] = d["device_key"]
+
+
+    for sheet_name in sheets:
+        sh = wb.sheet_by_name(sheet_name)
+        _,clsid_lbl = sheet_name.split()
+        clsid = state.ld.get_device_class_from_label(clsid_lbl)
+        typer.echo(clsid)
+
+        for rowx in range(1, sh.nrows):
+            devlabel = sh.cell_value(rowx,0)
+            room = sh.cell_value(rowx,1)
+            k = (devlabel, room)
+            if k in idev:
+                typer.echo("Deleting %s (%s in %s)" % (idev[k], devlabel, room))
+                if interactive:
+                    r = input("ok?")
+                    if r.lower() not in ["y","yes"]:
+                        continue
+                    typer.echo("deleting.")
+                r = state.ld.delete_device(idev[k])
+                print("====>",r)
 
 
 ### MAIN ###
@@ -76,6 +178,9 @@ def knx_dimmer(label, room, write_cmd, read_cmd, write_val, read_val):
 app = typer.Typer()
 app.add_typer(show, name="show")
 app.add_typer(add, name="add")
+app.add_typer(delete, name="delete")
+app.add_typer(provision, name="provision")
+app.add_typer(unprovision, name="unprovision")
 
 @app.callback()
 def main_options(base_url=None,
