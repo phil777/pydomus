@@ -43,6 +43,11 @@ def devices():
         typer.echo( "{0[device_key]} {0[devc_clsid]} {0[label]:<40} {0[room_label]}" .format(d) )
 
 @show.command()
+def device(device:str):
+    d = state.ld.get_device(device)
+    typer.echo("%r" % d)
+
+@show.command()
 def properties(dev):
     if not dev.startswith("DEVC_00") and len(dev) != 40:
         dev = state.ld.get_device_key(dev)
